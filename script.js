@@ -2,8 +2,8 @@ class BinaryUnit {
     constructor(x,y) {
       // Will accept various SetOfRules
       // For default, it will always keep activated if past of the same unit was activated
-      this.rulesForUnit = [new SetOfRulesResults([new CorrelationRule(x, y, 1), 1])];
-      this.currentValue = 0;
+      this.rulesForUnit = [new SetOfRulesResults([new CorrelationRule(x, y, 1)], 0), new SetOfRulesResults([new CorrelationRule(x, y, 0)], 1)];
+      this.currentValue = (x + y) % 2;
     }
 }
 
@@ -27,20 +27,14 @@ class SetOfRulesResults {
     }
 }
 
-// const copyUniverse = (universe) => {
-//     let newUniverse = [];
-//     for(let i = 0; i < universe.length; i++) {
-//         newUniverse.push([]);
-//         for(let j = 0; j < universe[i].length; j++) {
-//             newUniverse[i].push(new BinaryUnit(i, j, universe[i][j].currentValue));
-//         }
-//     }
-//     return newUniverse;
-// }
+const copyUniverse = (universe) => {
+    return JSON.parse(JSON.stringify(universe));
+}
 
 const widthOfUnits = 100;
 const unitSizeInPixels = 4;
 
+let pastUniverse = [];
 let universe = [];
 for(let i = 0; i < widthOfUnits; i++) {
     universe.push([]);
@@ -54,10 +48,43 @@ const ctx = canvas.getContext("2d");
 
 ctx.fillStyle = "white";
 
-for (let i = 0; i < widthOfUnits; i++) {
-    for (let j = 0; j < widthOfUnits; j++) {
-        if (universe[i][j].currentValue === 1){
-            ctx.fillRect(i * unitSizeInPixels, j * unitSizeInPixels, unitSizeInPixels, unitSizeInPixels);
+const iterate = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < widthOfUnits; i++) {
+        for (let j = 0; j < widthOfUnits; j++) {
+            if (universe[i][j].currentValue){
+                ctx.fillRect(i * unitSizeInPixels, j * unitSizeInPixels, unitSizeInPixels, unitSizeInPixels);
+            }
         }
-    }
-}
+    };
+
+    //how the universe will evolve
+    let newUniverse = copyUniverse(universe);
+    for (let i = 0; i < widthOfUnits; i++) {
+        for (let j = 0; j < widthOfUnits; j++) {
+           unit = universe[i][j];
+           unit.rulesForUnit.forEach((setOfRules) => {
+                let result = setOfRules.result;
+                let rules = setOfRules.rules;
+                
+                let ruleMatches = true;
+                rules.forEach((rule) => {
+                    let ruleValue = rule.value;
+                    if (ruleValue != universe[rule.x][rule.y].currentValue) {
+                        ruleMatches = false;
+                    }
+                });
+                console.log(ruleMatches);
+                if (ruleMatches) {
+                    newUniverse[i][j].currentValue = result;
+                }
+            });
+        }
+    };
+
+    //mutation of universe
+    universe = newUniverse;
+};
+
+//iterate();
+setInterval(iterate, 200);
